@@ -83,6 +83,8 @@ class PlacePageCommonLayout: NSObject, IPlacePageLayout {
 
   private lazy var placePageNavigationViewController: PlacePageHeaderViewController = PlacePageHeaderBuilder.build(data: placePageData, delegate: interactor, headerType: .fixed)
 
+  private lazy var photoViewController = PlacePagePhotoViewController()
+
   init(interactor: PlacePageInteractor, storyboard: UIStoryboard, data: PlacePageData) {
     self.interactor = interactor
     self.storyboard = storyboard
@@ -96,6 +98,12 @@ class PlacePageCommonLayout: NSObject, IPlacePageLayout {
     if let bookmarkData = placePageData.bookmarkData {
       editBookmarkViewController.view.isHidden = false
       editBookmarkInteractor?.data = .bookmark(bookmarkData)
+    }
+
+    viewControllers.append(photoViewController)
+    PlacePagePhotoService.shared.fetchPhotoUrl(wikidata: placePageData.infoData?.wikidata,
+                                             wikipedia: placePageData.infoData?.wikipedia) { [weak self] url in
+      self?.photoViewController.imageUrl = url
     }
 
     if let osmDescriptionViewController {

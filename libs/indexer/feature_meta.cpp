@@ -3,48 +3,42 @@
 #include "std/target_os.hpp"
 #include "timezone/serdes.hpp"
 
-namespace feature
-{
+namespace feature {
 using namespace std;
 
-namespace
-{
-char constexpr const * kBaseWikiUrl =
+namespace {
+char constexpr const *kBaseWikiUrl =
 #ifdef OMIM_OS_MOBILE
     ".m.wikipedia.org/wiki/";
 #else
     ".wikipedia.org/wiki/";
 #endif
 
-char constexpr const * kBaseCommonsUrl =
+char constexpr const *kBaseCommonsUrl =
 #ifdef OMIM_OS_MOBILE
     "https://commons.m.wikimedia.org/wiki/";
 #else
     "https://commons.wikimedia.org/wiki/";
 #endif
-}  // namespace
+} // namespace
 
-std::string_view MetadataBase::Get(uint8_t type) const
-{
+std::string_view MetadataBase::Get(uint8_t type) const {
   std::string_view sv;
   auto const it = m_metadata.find(type);
-  if (it != m_metadata.end())
-  {
+  if (it != m_metadata.end()) {
     sv = it->second;
     ASSERT(!sv.empty(), ());
   }
   return sv;
 }
 
-std::string_view MetadataBase::Set(uint8_t type, std::string value)
-{
+std::string_view MetadataBase::Set(uint8_t type, std::string value) {
   std::string_view sv;
 
   if (value.empty())
     m_metadata.erase(type);
-  else
-  {
-    auto & res = m_metadata[type];
+  else {
+    auto &res = m_metadata[type];
     res = std::move(value);
     sv = res;
   }
@@ -52,8 +46,7 @@ std::string_view MetadataBase::Set(uint8_t type, std::string value)
   return sv;
 }
 
-string Metadata::ToWikiURL(std::string v)
-{
+string Metadata::ToWikiURL(std::string v) {
   size_t const colon = v.find(':');
   if (colon == string::npos)
     return v;
@@ -66,13 +59,11 @@ string Metadata::ToWikiURL(std::string v)
   return "https://" + v.substr(0, colon) + kBaseWikiUrl + v.substr(colon + 1);
 }
 
-std::string Metadata::GetWikiURL() const
-{
+std::string Metadata::GetWikiURL() const {
   return ToWikiURL(string(Get(FMD_WIKIPEDIA)));
 }
 
-std::string Metadata::ToWikimediaCommonsURL(std::string v)
-{
+std::string Metadata::ToWikimediaCommonsURL(std::string v) {
   if (v.empty())
     return v;
 
@@ -86,32 +77,28 @@ std::string Metadata::ToWikimediaCommonsURL(std::string v)
   return kBaseCommonsUrl + v;
 }
 
-void Metadata::EncodeWikiURL(size_t startIndex, std::string & url)
-{
+void Metadata::EncodeWikiURL(size_t startIndex, std::string &url) {
   // Spaces and ? characters should be corrected to form a valid URL's path.
-  // Standard percent encoding also encodes other characters like (), which lead to an unnecessary HTTP redirection.
-  for (size_t i = startIndex; i < url.size(); ++i)
-  {
-    auto & c = url[i];
-    if (c == ' ')
-    {
+  // Standard percent encoding also encodes other characters like (), which lead
+  // to an unnecessary HTTP redirection.
+  for (size_t i = startIndex; i < url.size(); ++i) {
+    auto &c = url[i];
+    if (c == ' ') {
       c = '_';
-    }
-    else if (c == '?')
-    {
+    } else if (c == '?') {
       c = '%';
-      url.insert(++i, "3F");  // ? => %3F
+      url.insert(++i, "3F"); // ? => %3F
       ++i;
     }
   }
 }
 
 // static
-bool Metadata::TypeFromString(string_view k, Metadata::EType & outType)
-{
+bool Metadata::TypeFromString(string_view k, Metadata::EType &outType) {
   if (k == "opening_hours")
     outType = Metadata::FMD_OPEN_HOURS;
-  else if (k == "phone" || k == "contact:phone" || k == "contact:mobile" || k == "mobile")
+  else if (k == "phone" || k == "contact:phone" || k == "contact:mobile" ||
+           k == "mobile")
     outType = Metadata::FMD_PHONE_NUMBER;
   else if (k == "fax" || k == "contact:fax")
     outType = Metadata::EType::FMD_FAX_NUMBER;
@@ -149,7 +136,8 @@ bool Metadata::TypeFromString(string_view k, Metadata::EType & outType)
     outType = Metadata::FMD_TURN_LANES_BACKWARD;
   else if (k == "email" || k == "contact:email")
     outType = Metadata::FMD_EMAIL;
-  // Process only _main_ tag here, needed for editor ser/des. Actual postcode parsing happens in GetNameAndType.
+  // Process only _main_ tag here, needed for editor ser/des. Actual postcode
+  // parsing happens in GetNameAndType.
   else if (k == "addr:postcode")
     outType = Metadata::FMD_POSTCODE;
   else if (k == "wikipedia")
@@ -190,34 +178,33 @@ bool Metadata::TypeFromString(string_view k, Metadata::EType & outType)
     outType = Metadata::FMD_OUTDOOR_SEATING;
   else if (k == "network")
     outType = Metadata::FMD_NETWORK;
+  else if (k == "wikidata")
+    outType = Metadata::FMD_WIKIDATA;
   else
     return false;
 
   return true;
 }
 
-void Metadata::ClearPOIAttribs()
-{
+void Metadata::ClearPOIAttribs() {
   for (auto i = m_metadata.begin(); i != m_metadata.end();)
-    if (i->first != Metadata::FMD_ELE && i->first != Metadata::FMD_POSTCODE && i->first != Metadata::FMD_FLATS &&
-        i->first != Metadata::FMD_HEIGHT && i->first != Metadata::FMD_MIN_HEIGHT &&
-        i->first != Metadata::FMD_BUILDING_LEVELS && i->first != Metadata::FMD_TEST_ID &&
-        i->first != Metadata::FMD_BUILDING_MIN_LEVEL)
-    {
+    if (i->first != Metadata::FMD_ELE && i->first != Metadata::FMD_POSTCODE &&
+        i->first != Metadata::FMD_FLATS && i->first != Metadata::FMD_HEIGHT &&
+        i->first != Metadata::FMD_MIN_HEIGHT &&
+        i->first != Metadata::FMD_BUILDING_LEVELS &&
+        i->first != Metadata::FMD_TEST_ID &&
+        i->first != Metadata::FMD_BUILDING_MIN_LEVEL) {
       i = m_metadata.erase(i);
-    }
-    else
+    } else
       ++i;
 }
 
-void RegionData::SetLanguages(vector<string> const & codes)
-{
+void RegionData::SetLanguages(vector<string> const &codes) {
   if (!MetadataBase::Get(RegionData::Type::RD_LANGUAGES).empty())
     return;
 
   string value;
-  for (string const & code : codes)
-  {
+  for (string const &code : codes) {
     int8_t const lang = StringUtf8Multilang::GetLangIndex(code);
     if (lang != StringUtf8Multilang::kUnsupportedLanguageCode)
       value.push_back(lang);
@@ -226,48 +213,41 @@ void RegionData::SetLanguages(vector<string> const & codes)
   MetadataBase::Set(RegionData::Type::RD_LANGUAGES, value);
 }
 
-void RegionData::GetLanguages(LangsBufferT & langs) const
-{
+void RegionData::GetLanguages(LangsBufferT &langs) const {
   for (auto const lang : Get(RegionData::Type::RD_LANGUAGES))
     langs.push_back(lang);
 }
 
-bool RegionData::HasLanguage(int8_t const lang) const
-{
+bool RegionData::HasLanguage(int8_t const lang) const {
   for (auto const lng : Get(RegionData::Type::RD_LANGUAGES))
     if (lng == lang)
       return true;
   return false;
 }
 
-bool RegionData::IsSingleLanguage(int8_t const lang) const
-{
+bool RegionData::IsSingleLanguage(int8_t const lang) const {
   auto const value = Get(RegionData::Type::RD_LANGUAGES);
   if (value.size() != 1)
     return false;
   return value.front() == lang;
 }
 
-void RegionData::AddPublicHoliday(int8_t month, int8_t offset)
-{
+void RegionData::AddPublicHoliday(int8_t month, int8_t offset) {
   string value(Get(RegionData::Type::RD_PUBLIC_HOLIDAYS));
   value.push_back(month);
   value.push_back(offset);
   Set(RegionData::Type::RD_PUBLIC_HOLIDAYS, std::move(value));
 }
 
-void RegionData::LoadTimeZone()
-{
+void RegionData::LoadTimeZone() {
   if (auto res = om::tz::Deserialize(Get(RD_TIMEZONE)))
     m_timeZone = std::move(res.value());
   else
     LOG(LWARNING, ("Failed to read timezone info:", res.error()));
 }
 
-void RegionData::MergeFrom(RegionData const & rhs)
-{
-  for (int i = 0; i < RD_COUNT; ++i)
-  {
+void RegionData::MergeFrom(RegionData const &rhs) {
+  for (int i = 0; i < RD_COUNT; ++i) {
     auto const k = static_cast<RegionData::Type>(i);
     if (Get(k).empty())
       if (auto v = rhs.Get(k); !v.empty())
@@ -276,88 +256,140 @@ void RegionData::MergeFrom(RegionData const & rhs)
 }
 
 // Warning: exact osm tag keys should be returned for valid enum values.
-string ToString(Metadata::EType type)
-{
-  switch (type)
-  {
-  case Metadata::FMD_CUISINE: return "cuisine";
-  case Metadata::FMD_OPEN_HOURS: return "opening_hours";
-  case Metadata::FMD_PHONE_NUMBER: return "phone";
-  case Metadata::FMD_FAX_NUMBER: return "fax";
-  case Metadata::FMD_STARS: return "stars";
-  case Metadata::FMD_OPERATOR: return "operator";
-  case Metadata::FMD_WEBSITE: return "website";
-  case Metadata::FMD_INTERNET: return "internet_access";
-  case Metadata::FMD_ELE: return "ele";
-  case Metadata::FMD_TURN_LANES: return "turn:lanes";
-  case Metadata::FMD_TURN_LANES_FORWARD: return "turn:lanes:forward";
-  case Metadata::FMD_TURN_LANES_BACKWARD: return "turn:lanes:backward";
-  case Metadata::FMD_EMAIL: return "email";
-  case Metadata::FMD_POSTCODE: return "addr:postcode";
-  case Metadata::FMD_WIKIPEDIA: return "wikipedia";
-  case Metadata::FMD_DESCRIPTION: return "description";
-  case Metadata::FMD_FLATS: return "addr:flats";
-  case Metadata::FMD_HEIGHT: return "height";
-  case Metadata::FMD_MIN_HEIGHT: return "min_height";
-  case Metadata::FMD_DENOMINATION: return "denomination";
-  case Metadata::FMD_BUILDING_LEVELS: return "building:levels";
-  case Metadata::FMD_TEST_ID: return "test_id";
-  case Metadata::FMD_CUSTOM_IDS: return "custom_ids";
-  case Metadata::FMD_PRICE_RATES: return "price_rates";
-  case Metadata::FMD_RATINGS: return "ratings";
-  case Metadata::FMD_EXTERNAL_URI: return "external_uri";
-  case Metadata::FMD_LEVEL: return "level";
-  case Metadata::FMD_AIRPORT_IATA: return "iata";
-  case Metadata::FMD_BRAND: return "brand";
-  case Metadata::FMD_DURATION: return "duration";
-  case Metadata::FMD_CONTACT_FACEBOOK: return "contact:facebook";
-  case Metadata::FMD_CONTACT_INSTAGRAM: return "contact:instagram";
-  case Metadata::FMD_CONTACT_TWITTER: return "contact:twitter";
-  case Metadata::FMD_CONTACT_VK: return "contact:vk";
-  case Metadata::FMD_CONTACT_LINE: return "contact:line";
-  case Metadata::FMD_DESTINATION: return "destination";
-  case Metadata::FMD_DESTINATION_REF: return "destination:ref";
-  case Metadata::FMD_JUNCTION_REF: return "junction:ref";
-  case Metadata::FMD_BUILDING_MIN_LEVEL: return "building:min_level";
-  case Metadata::FMD_WIKIMEDIA_COMMONS: return "wikimedia_commons";
-  case Metadata::FMD_CAPACITY: return "capacity";
-  case Metadata::FMD_WHEELCHAIR: return "wheelchair";
-  case Metadata::FMD_LOCAL_REF: return "local_ref";
-  case Metadata::FMD_DRIVE_THROUGH: return "drive_through";
-  case Metadata::FMD_WEBSITE_MENU: return "website:menu";
-  case Metadata::FMD_SELF_SERVICE: return "self_service";
-  case Metadata::FMD_OUTDOOR_SEATING: return "outdoor_seating";
-  case Metadata::FMD_NETWORK: return "network";
-  case Metadata::FMD_SCHEDULE_ID: return "schedule_id";
-  case Metadata::FMD_COUNT: CHECK(false, ("FMD_COUNT can not be used as a type."));
+string ToString(Metadata::EType type) {
+  switch (type) {
+  case Metadata::FMD_CUISINE:
+    return "cuisine";
+  case Metadata::FMD_OPEN_HOURS:
+    return "opening_hours";
+  case Metadata::FMD_PHONE_NUMBER:
+    return "phone";
+  case Metadata::FMD_FAX_NUMBER:
+    return "fax";
+  case Metadata::FMD_STARS:
+    return "stars";
+  case Metadata::FMD_OPERATOR:
+    return "operator";
+  case Metadata::FMD_WEBSITE:
+    return "website";
+  case Metadata::FMD_INTERNET:
+    return "internet_access";
+  case Metadata::FMD_ELE:
+    return "ele";
+  case Metadata::FMD_TURN_LANES:
+    return "turn:lanes";
+  case Metadata::FMD_TURN_LANES_FORWARD:
+    return "turn:lanes:forward";
+  case Metadata::FMD_TURN_LANES_BACKWARD:
+    return "turn:lanes:backward";
+  case Metadata::FMD_EMAIL:
+    return "email";
+  case Metadata::FMD_POSTCODE:
+    return "addr:postcode";
+  case Metadata::FMD_WIKIPEDIA:
+    return "wikipedia";
+  case Metadata::FMD_DESCRIPTION:
+    return "description";
+  case Metadata::FMD_FLATS:
+    return "addr:flats";
+  case Metadata::FMD_HEIGHT:
+    return "height";
+  case Metadata::FMD_MIN_HEIGHT:
+    return "min_height";
+  case Metadata::FMD_DENOMINATION:
+    return "denomination";
+  case Metadata::FMD_BUILDING_LEVELS:
+    return "building:levels";
+  case Metadata::FMD_TEST_ID:
+    return "test_id";
+  case Metadata::FMD_CUSTOM_IDS:
+    return "custom_ids";
+  case Metadata::FMD_PRICE_RATES:
+    return "price_rates";
+  case Metadata::FMD_RATINGS:
+    return "ratings";
+  case Metadata::FMD_EXTERNAL_URI:
+    return "external_uri";
+  case Metadata::FMD_LEVEL:
+    return "level";
+  case Metadata::FMD_AIRPORT_IATA:
+    return "iata";
+  case Metadata::FMD_BRAND:
+    return "brand";
+  case Metadata::FMD_DURATION:
+    return "duration";
+  case Metadata::FMD_CONTACT_FACEBOOK:
+    return "contact:facebook";
+  case Metadata::FMD_CONTACT_INSTAGRAM:
+    return "contact:instagram";
+  case Metadata::FMD_CONTACT_TWITTER:
+    return "contact:twitter";
+  case Metadata::FMD_CONTACT_VK:
+    return "contact:vk";
+  case Metadata::FMD_CONTACT_LINE:
+    return "contact:line";
+  case Metadata::FMD_DESTINATION:
+    return "destination";
+  case Metadata::FMD_DESTINATION_REF:
+    return "destination:ref";
+  case Metadata::FMD_JUNCTION_REF:
+    return "junction:ref";
+  case Metadata::FMD_BUILDING_MIN_LEVEL:
+    return "building:min_level";
+  case Metadata::FMD_WIKIMEDIA_COMMONS:
+    return "wikimedia_commons";
+  case Metadata::FMD_CAPACITY:
+    return "capacity";
+  case Metadata::FMD_WHEELCHAIR:
+    return "wheelchair";
+  case Metadata::FMD_LOCAL_REF:
+    return "local_ref";
+  case Metadata::FMD_DRIVE_THROUGH:
+    return "drive_through";
+  case Metadata::FMD_WEBSITE_MENU:
+    return "website:menu";
+  case Metadata::FMD_SELF_SERVICE:
+    return "self_service";
+  case Metadata::FMD_OUTDOOR_SEATING:
+    return "outdoor_seating";
+  case Metadata::FMD_NETWORK:
+    return "network";
+  case Metadata::FMD_SCHEDULE_ID:
+    return "schedule_id";
+  case Metadata::FMD_WIKIDATA:
+    return "wikidata";
+  case Metadata::FMD_COUNT:
+    CHECK(false, ("FMD_COUNT can not be used as a type."));
   };
 
   return {};
 }
 
-string DebugPrint(Metadata const & metadata)
-{
+string DebugPrint(Metadata const &metadata) {
   bool first = true;
   std::string res = "Metadata [";
-  for (uint8_t i = 0; i < static_cast<uint8_t>(Metadata::FMD_COUNT); ++i)
-  {
+  for (uint8_t i = 0; i < static_cast<uint8_t>(Metadata::FMD_COUNT); ++i) {
     auto const t = static_cast<Metadata::EType>(i);
     auto const sv = metadata.Get(t);
-    if (!sv.empty())
-    {
+    if (!sv.empty()) {
       if (first)
         first = false;
       else
         res += "; ";
 
       res.append(DebugPrint(t)).append("=");
-      switch (t)
-      {
-      case Metadata::FMD_DESCRIPTION: res += DebugPrint(StringUtf8Multilang::FromBuffer(std::string(sv))); break;
+      switch (t) {
+      case Metadata::FMD_DESCRIPTION:
+        res += DebugPrint(StringUtf8Multilang::FromBuffer(std::string(sv)));
+        break;
       case Metadata::FMD_CUSTOM_IDS:
       case Metadata::FMD_PRICE_RATES:
-      case Metadata::FMD_RATINGS: res += DebugPrint(indexer::CustomKeyValue(sv)); break;
-      default: res.append(sv); break;
+      case Metadata::FMD_RATINGS:
+        res += DebugPrint(indexer::CustomKeyValue(sv));
+        break;
+      default:
+        res.append(sv);
+        break;
       }
     }
   }
@@ -365,8 +397,9 @@ string DebugPrint(Metadata const & metadata)
   return res;
 }
 
-string DebugPrint(AddressData const & addressData)
-{
-  return string("AddressData { Street = \"").append(addressData.Get(AddressData::Type::Street)) + "\" }";
+string DebugPrint(AddressData const &addressData) {
+  return string("AddressData { Street = \"")
+             .append(addressData.Get(AddressData::Type::Street)) +
+         "\" }";
 }
-}  // namespace feature
+} // namespace feature
