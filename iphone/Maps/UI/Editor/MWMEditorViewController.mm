@@ -1130,7 +1130,12 @@ void registerCellsForTableView(std::vector<MWMEditorCellID> const &cells,
 #pragma mark - MWMObjectsCategorySelectorDelegate
 
 - (void)reloadObject:(osm::EditableMapObject const &)object {
-  [self setEditableMapObject:object];
+  m_mapObject = object;
+  [self configTable];
+}
+
+- (void)didSelectCategory:(std::string const &)category {
+  m_mapObject.SetType(classif().GetTypeByReadableObjectName(category));
   [self configTable];
 }
 
@@ -1167,12 +1172,9 @@ void registerCellsForTableView(std::vector<MWMEditorCellID> const &cells,
     MWMStreetEditorViewController *dvc = segue.destinationViewController;
     dvc.delegate = self;
   } else if ([segue.identifier isEqualToString:kCategoryEditorSegue]) {
-    NSAssert(
-        self.isCreating,
-        @"Invalid state! We'll be able to change feature category only if we "
-        @"are creating feature!");
     MWMObjectsCategorySelectorController *dvc = segue.destinationViewController;
     dvc.delegate = self;
+    dvc.isCreating = self.isCreating;
     auto const type = *(m_mapObject.GetTypes().begin());
     auto const readableType = classif().GetReadableObjectName(type);
     [dvc setSelectedCategory:readableType];

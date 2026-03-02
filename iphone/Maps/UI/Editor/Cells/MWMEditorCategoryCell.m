@@ -23,19 +23,12 @@ CGFloat const kDetailShortRightSpace = 16;
   self.delegate = delegate;
   self.detail.text = detail;
   self.categoryIcon.image = icon;
-  self.accessoryIcon.hidden = !isCreating;
-  if (isCreating) {
-    self.selectedBackgroundView = [[UIView alloc] init];
-    self.selectedBackgroundView.styleName = @"PressBackground";
-  } else {
-    self.selectionStyle = UITableViewCellSelectionStyleNone;
-    self.detailRightSpace.constant = kDetailShortRightSpace;
-  }
+  self.accessoryIcon.hidden = NO;
+  self.selectedBackgroundView = [[UIView alloc] init];
+  self.selectedBackgroundView.styleName = @"PressBackground";
 }
 
 - (IBAction)cellTap {
-  if (self.accessoryIcon.hidden)
-    return;
   [self.delegate cellDidPressButton:self];
 }
 
